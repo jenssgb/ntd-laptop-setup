@@ -292,6 +292,23 @@ function Task-EmptyRecycleBin {
     }
 }
 
+function Task-InstallGit {
+    # Nur installieren, wenn Git fehlt (nichts ueberschreiben)
+    if ((Get-Command git.exe -ErrorAction SilentlyContinue) -or (Test-Path 'C:\Program Files\Git\cmd\git.exe')) {
+        return "Git bereits vorhanden"
+    }
+    $winget = Get-Command winget -ErrorAction SilentlyContinue
+    if (-not $winget) { throw "winget nicht verfuegbar (Git-Installation braucht winget/Internet)." }
+    $r = Start-Watched -FilePath $winget.Source -Label "Git installieren (winget)" -TimeoutSec 600 -Arguments @(
+        'install','--id','Git.Git','-e','--source','winget','--scope','machine','--silent',
+        '--accept-package-agreements','--accept-source-agreements'
+    )
+    foreach ($l in $r.Output) { Write-Log ("      | $l") }
+    if ($r.ExitCode -eq 0) { return "Git installiert" }
+    if ($r.ExitCode -eq -1978335189) { return "Git bereits aktuell" }   # kein anwendbares Update
+    throw "winget ExitCode $($r.ExitCode)"
+}
+
 function Task-InstallExtensions {
     # code CLI finden
     $codeCmd = 'C:\Program Files\Microsoft VS Code\bin\code.cmd'
@@ -367,6 +384,7 @@ Invoke-Step "Desktop leeren"                { Task-CleanDesktops }
 Invoke-Step "Papierkorb leeren"             { Task-EmptyRecycleBin }
 Invoke-Step "VS Code installieren"          { Task-InstallVSCode }
 Invoke-Step "VS Code Extensions"            { Task-InstallExtensions }
+Invoke-Step "Git installieren"              { Task-InstallGit }
 Invoke-Step "Hintergrundbild setzen"        { Task-SetWallpaper }
 Invoke-Step "Ordner C:\CodeTemp anlegen"    { Task-CreateCodeTemp }
 
