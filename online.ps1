@@ -42,8 +42,10 @@ $inst = Join-Path $base 'installers'
 New-Item -ItemType Directory -Force -Path $inst | Out-Null
 
 Write-Host "Lade Setup-Dateien..." -ForegroundColor Cyan
-Invoke-WebRequest "$RepoRaw/Setup.ps1"                 -OutFile (Join-Path $base 'Setup.ps1')        -UseBasicParsing
-Invoke-WebRequest "$RepoRaw/installers/extensions.txt" -OutFile (Join-Path $inst 'extensions.txt')   -UseBasicParsing
+$nc = @{ 'Cache-Control' = 'no-cache'; 'Pragma' = 'no-cache' }
+$bust = "?t=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+Invoke-WebRequest "$RepoRaw/Setup.ps1$bust"                 -Headers $nc -OutFile (Join-Path $base 'Setup.ps1')      -UseBasicParsing
+Invoke-WebRequest "$RepoRaw/installers/extensions.txt$bust" -Headers $nc -OutFile (Join-Path $inst 'extensions.txt') -UseBasicParsing
 
 Write-Host "Lade VS Code (ca. 190 MB) von Microsoft..." -ForegroundColor Cyan
 Invoke-WebRequest 'https://code.visualstudio.com/sha/download?build=stable&os=win32-x64' `
