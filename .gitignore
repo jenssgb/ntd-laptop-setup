@@ -1,0 +1,7 @@
+# Grosse Binaries gehoeren nicht ins Git (GitHub-Limit 100 MB)
+installers/*.exe
+installers/*.vsix
+installers/extensions/*.vsix
+
+# Laptop-Logs
+logs/*.log

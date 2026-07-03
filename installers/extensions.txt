@@ -1,0 +1,4 @@
+# VS Code Extensions - eine ID pro Zeile. Zeilen mit # sind Kommentare.
+# .vsix mit passendem Namen in installers\extensions\ wird bevorzugt (offline), sonst online.
+bierner.emojisense
+bierner.markdown-emoji
