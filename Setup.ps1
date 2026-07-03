@@ -150,13 +150,29 @@ function Invoke-Step {
 #  AUFGABEN
 # ---------------------------------------------------------------------------
 
+function Test-VSCodeInstalled {
+    # Robuste Erkennung - auch wenn als Admin elevated (dann zeigt LOCALAPPDATA aufs Admin-Profil!)
+    $probe = @(
+        "$env:ProgramFiles\Microsoft VS Code\Code.exe",
+        "${env:ProgramFiles(x86)}\Microsoft VS Code\Code.exe"
+    )
+    # User-Setup in JEDEM Profil (VS-Code-Standard-Installation)
+    $probe += (Get-ChildItem 'C:\Users' -Directory -ErrorAction SilentlyContinue |
+               ForEach-Object { Join-Path $_.FullName 'AppData\Local\Programs\Microsoft VS Code\Code.exe' })
+    foreach ($p in $probe) { if ($p -and (Test-Path -LiteralPath $p)) { return $true } }
+    # Registry-Fallback (Uninstall-Eintraege)
+    $keys = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    foreach ($k in $keys) {
+        if (Get-ItemProperty $k -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like 'Microsoft Visual Studio Code*' }) { return $true }
+    }
+    return $false
+}
+
 function Task-InstallVSCode {
     # Nur installieren, wenn VS Code fehlt (nichts neu installieren/herunterladen)
-    $codeExe1 = 'C:\Program Files\Microsoft VS Code\Code.exe'
-    $codeExe2 = Join-Path $env:LOCALAPPDATA 'Programs\Microsoft VS Code\Code.exe'
-    if ((Test-Path -LiteralPath $codeExe1) -or (Test-Path -LiteralPath $codeExe2)) {
-        return "bereits vorhanden"
-    }
+    if (Test-VSCodeInstalled) { return "bereits vorhanden" }
 
     # Passenden System-Installer vom Stick waehlen (offline, bulletproof)
     # Architektur robust bestimmen (auch unter WOW64 / ARM64-Emulation)

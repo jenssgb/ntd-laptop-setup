@@ -49,8 +49,17 @@ Invoke-WebRequest "$RepoRaw/Setup.ps1$bust"                 -Headers $nc -OutFil
 Invoke-WebRequest "$RepoRaw/installers/extensions.txt$bust" -Headers $nc -OutFile (Join-Path $inst 'extensions.txt') -UseBasicParsing
 
 # VS Code nur laden, wenn noch nicht installiert (spart den 194-MB-Download)
-$codeInstalled = (Test-Path "$env:ProgramFiles\Microsoft VS Code\Code.exe") -or
-                 (Test-Path "$env:LOCALAPPDATA\Programs\Microsoft VS Code\Code.exe")
+# Robust: als Admin zeigt LOCALAPPDATA aufs Admin-Profil -> alle Profile + Registry pruefen
+$codeInstalled = $false
+$probe = @("$env:ProgramFiles\Microsoft VS Code\Code.exe", "${env:ProgramFiles(x86)}\Microsoft VS Code\Code.exe")
+$probe += (Get-ChildItem 'C:\Users' -Directory -ErrorAction SilentlyContinue |
+           ForEach-Object { Join-Path $_.FullName 'AppData\Local\Programs\Microsoft VS Code\Code.exe' })
+foreach ($p in $probe) { if ($p -and (Test-Path -LiteralPath $p)) { $codeInstalled = $true; break } }
+if (-not $codeInstalled) {
+    foreach ($k in 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*','HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*','HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*') {
+        if (Get-ItemProperty $k -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like 'Microsoft Visual Studio Code*' }) { $codeInstalled = $true; break }
+    }
+}
 if ($codeInstalled) {
     Write-Host "VS Code bereits vorhanden - Download uebersprungen." -ForegroundColor Green
 } else {
