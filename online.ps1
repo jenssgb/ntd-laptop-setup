@@ -48,9 +48,16 @@ $bust = "?t=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
 Invoke-WebRequest "$RepoRaw/Setup.ps1$bust"                 -Headers $nc -OutFile (Join-Path $base 'Setup.ps1')      -UseBasicParsing
 Invoke-WebRequest "$RepoRaw/installers/extensions.txt$bust" -Headers $nc -OutFile (Join-Path $inst 'extensions.txt') -UseBasicParsing
 
-Write-Host "Lade VS Code (ca. 190 MB) von Microsoft..." -ForegroundColor Cyan
-Invoke-WebRequest 'https://code.visualstudio.com/sha/download?build=stable&os=win32-x64' `
-    -OutFile (Join-Path $inst 'VSCodeSetup-x64.exe') -UseBasicParsing
+# VS Code nur laden, wenn noch nicht installiert (spart den 194-MB-Download)
+$codeInstalled = (Test-Path "$env:ProgramFiles\Microsoft VS Code\Code.exe") -or
+                 (Test-Path "$env:LOCALAPPDATA\Programs\Microsoft VS Code\Code.exe")
+if ($codeInstalled) {
+    Write-Host "VS Code bereits vorhanden - Download uebersprungen." -ForegroundColor Green
+} else {
+    Write-Host "Lade VS Code (ca. 190 MB) von Microsoft..." -ForegroundColor Cyan
+    Invoke-WebRequest 'https://code.visualstudio.com/sha/download?build=stable&os=win32-x64' `
+        -OutFile (Join-Path $inst 'VSCodeSetup-x64.exe') -UseBasicParsing
+}
 
 # --- Hauptskript starten (bereits elevated) ---
 & (Join-Path $base 'Setup.ps1')

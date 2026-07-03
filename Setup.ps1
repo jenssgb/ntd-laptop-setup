@@ -151,6 +151,13 @@ function Invoke-Step {
 # ---------------------------------------------------------------------------
 
 function Task-InstallVSCode {
+    # Nur installieren, wenn VS Code fehlt (nichts neu installieren/herunterladen)
+    $codeExe1 = 'C:\Program Files\Microsoft VS Code\Code.exe'
+    $codeExe2 = Join-Path $env:LOCALAPPDATA 'Programs\Microsoft VS Code\Code.exe'
+    if ((Test-Path -LiteralPath $codeExe1) -or (Test-Path -LiteralPath $codeExe2)) {
+        return "bereits vorhanden"
+    }
+
     # Passenden System-Installer vom Stick waehlen (offline, bulletproof)
     # Architektur robust bestimmen (auch unter WOW64 / ARM64-Emulation)
     $arch = $env:PROCESSOR_ARCHITECTURE
