@@ -14,6 +14,7 @@
 #>
 
 $ErrorActionPreference = 'Stop'
+$ProgressPreference    = 'SilentlyContinue'   # macht Invoke-WebRequest ~10x schneller (kein Progress-Rendering)
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $RepoRaw = 'https://raw.githubusercontent.com/jenssgb/ntd-laptop-setup/main'
