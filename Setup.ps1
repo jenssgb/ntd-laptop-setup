@@ -192,6 +192,10 @@ function Task-InstallVSCode {
     $already = Test-Path 'C:\Program Files\Microsoft VS Code\Code.exe'
 
     if ($exe) {
+        # Installer-Integritaet pruefen (verhindert "Setup corrupt" bei kaputtem Download)
+        if ((Get-AuthenticodeSignature -LiteralPath $exe.FullName).Status -ne 'Valid') {
+            throw "Installer beschaedigt/ungueltig signiert: $($exe.Name) - bitte neu bereitstellen."
+        }
         # Laufendes VS Code vorher beenden, sonst haengt der Installer (wartet aufs Schliessen)
         Get-Process -Name 'Code','Code - Insiders' -ErrorAction SilentlyContinue | ForEach-Object {
             try { Stop-Process -Id $_.Id -Force -ErrorAction Stop } catch {}

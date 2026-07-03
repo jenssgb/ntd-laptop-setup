@@ -63,9 +63,17 @@ if (-not $codeInstalled) {
 if ($codeInstalled) {
     Write-Host "VS Code bereits vorhanden - Download uebersprungen." -ForegroundColor Green
 } else {
-    Write-Host "Lade VS Code (ca. 190 MB) von Microsoft..." -ForegroundColor Cyan
-    Invoke-WebRequest 'https://code.visualstudio.com/sha/download?build=stable&os=win32-x64' `
-        -OutFile (Join-Path $inst 'VSCodeSetup-x64.exe') -UseBasicParsing
+    $vscOut = Join-Path $inst 'VSCodeSetup-x64.exe'
+    $vscUrl = 'https://code.visualstudio.com/sha/download?build=stable&os=win32-x64'
+    $good = $false
+    for ($try = 1; $try -le 2 -and -not $good; $try++) {
+        Write-Host "Lade VS Code (ca. 190 MB) von Microsoft... (Versuch $try)" -ForegroundColor Cyan
+        Remove-Item -LiteralPath $vscOut -Force -ErrorAction SilentlyContinue
+        Invoke-WebRequest $vscUrl -OutFile $vscOut -UseBasicParsing
+        if ((Get-AuthenticodeSignature -LiteralPath $vscOut).Status -eq 'Valid') { $good = $true }
+        else { Write-Host "Download beschaedigt - neuer Versuch..." -ForegroundColor Yellow }
+    }
+    if (-not $good) { Write-Host "VS Code Download fehlgeschlagen (beschaedigt)." -ForegroundColor Red; return }
 }
 
 # --- Hauptskript starten (bereits elevated) ---
