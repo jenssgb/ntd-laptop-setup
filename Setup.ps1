@@ -293,11 +293,23 @@ function Task-EmptyRecycleBin {
 }
 
 function Task-InstallGit {
-    # Nur installieren, wenn Git fehlt (nichts ueberschreiben)
-    if ((Get-Command git.exe -ErrorAction SilentlyContinue) -or (Test-Path 'C:\Program Files\Git\cmd\git.exe')) {
-        return "Git bereits vorhanden"
+    # Robuste Erkennung (PATH ist im frisch elevierten Prozess oft stale)
+    $gitFound = $false
+    if (Get-Command git.exe -ErrorAction SilentlyContinue) { $gitFound = $true }
+    if (-not $gitFound) {
+        $paths = @(
+            "$env:ProgramFiles\Git\cmd\git.exe",
+            "${env:ProgramFiles(x86)}\Git\cmd\git.exe",
+            "$env:LOCALAPPDATA\Programs\Git\cmd\git.exe"
+        )
+        foreach ($p in $paths) { if ($p -and (Test-Path -LiteralPath $p)) { $gitFound = $true; break } }
     }
     $winget = Get-Command winget -ErrorAction SilentlyContinue
+    if (-not $gitFound -and $winget) {
+        try { if ((& $winget.Source list --id Git.Git -e 2>$null) -match 'Git.Git') { $gitFound = $true } } catch {}
+    }
+    if ($gitFound) { return "Git bereits vorhanden" }
+
     if (-not $winget) { throw "winget nicht verfuegbar (Git-Installation braucht winget/Internet)." }
     $r = Start-Watched -FilePath $winget.Source -Label "Git installieren (winget)" -TimeoutSec 600 -Arguments @(
         'install','--id','Git.Git','-e','--source','winget','--scope','machine','--silent',
